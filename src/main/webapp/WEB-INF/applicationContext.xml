@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:jdbc="http://www.springframework.org/schema/jdbc" xmlns:jee="http://www.springframework.org/schema/jee"
+	xmlns:tx="http://www.springframework.org/schema/tx" xmlns:jpa="http://www.springframework.org/schema/data/jpa"
+	xsi:schemaLocation="
+	   http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.2.xsd
+	   http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.2.xsd
+	   http://www.springframework.org/schema/jdbc http://www.springframework.org/schema/jdbc/spring-jdbc-4.2.xsd
+	   http://www.springframework.org/schema/jee http://www.springframework.org/schema/jee/spring-jee-4.2.xsd
+	   http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-4.2.xsd
+	   http://www.springframework.org/schema/data/jpa http://www.springframework.org/schema/data/jpa/spring-jpa-1.8.xsd"
+	default-lazy-init="true">
+	
+	<context:property-placeholder location="/WEB-INF/application.properties" />
+
+	<!-- 使用annotation 自动注册bean, 并保证@Required、@Autowired的属性被注入 -->
+	<context:component-scan base-package="com.yiandy.shiro">
+		<context:exclude-filter type="annotation" expression="org.springframework.stereotype.Controller" />
+		<context:exclude-filter type="annotation" expression="org.springframework.web.bind.annotation.ControllerAdvice" />
+	</context:component-scan>
+
+	<bean id="dataSource" class="com.mchange.v2.c3p0.ComboPooledDataSource" destroy-method="close">
+		<property name="driverClass" value="com.mysql.jdbc.Driver" />
+		<property name="jdbcUrl" value="${jdbc.url}" />
+		<property name="user" value="${jdbc.username}" />
+		<property name="password" value="${jdbc.password}" />
+
+		<property name="maxPoolSize" value="${jdbc.pool.maxPoolSize}" />
+		<property name="minPoolSize" value="${jdbc.pool.minPoolSize}" />
+		<property name="initialPoolSize" value="${jdbc.pool.initialPoolSize}" />
+
+		<property name="maxIdleTime" value="600" />
+		<property name="checkoutTimeout" value="3000"/>  
+		<property name="acquireIncrement" value="5" />
+		<property name="acquireRetryAttempts" value="30" />
+		<property name="acquireRetryDelay" value="1000" />
+		
+		<property name="autoCommitOnClose" value="false" />
+		<property name="automaticTestTable" value="cptest" />
+		
+		<property name="breakAfterAcquireFailure" value="false" />
+		<property name="idleConnectionTestPeriod" value="60" />
+		
+		<property name="testConnectionOnCheckin" value="true" />
+	</bean>
+
+	<!-- Jpa Entity Manager 配置 -->
+	<bean id="entityManagerFactory" class="org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean">
+		<property name="dataSource" ref="dataSource" />
+		<property name="jpaVendorAdapter">
+            <bean class="org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter">
+                <property name="database" value="MYSQL" />
+                <property name="showSql" value="true" />
+                <property name="generateDdl" value="false" />
+                <property name="databasePlatform" value="org.hibernate.dialect.MySQL5InnoDBDialect"/>
+            </bean>
+        </property>
+		<property name="packagesToScan" value="com.yiandy.shiro" />
+		<property name="jpaProperties">
+			<props>
+				<!-- 命名规则 My_NAME->MyName -->
+				<!-- <prop key="hibernate.ejb.naming_strategy">org.hibernate.cfg.ImprovedNamingStrategy</prop> -->
+				<prop key="hibernate.show_sql">false</prop>
+				<prop key="hibernate.format_sql">false</prop>
+				<!-- <prop key="javax.persistence.sharedCache.mode">ENABLE_SELECTIVE</prop>
+				<prop key="hibernate.cache.region.factory_class">com.googlecode.hibernate.memcached.MemcachedRegionFactory</prop>
+				<prop key="hibernate.cache.region_prefix">second.level.memcache</prop> -->
+				<!-- 开启二级缓存  -->
+				<!-- <prop key="cache.use_second_level_cache">true</prop> -->
+				<!-- 开启查询缓存 -->
+				<!-- <prop key="hibernate.cache.use_query_cache">true</prop> -->
+			</props>
+		</property>
+	</bean>
+	
+	<!-- Spring Data Jpa配置 -->
+	<jpa:repositories base-package="com.yiandy.shiro" transaction-manager-ref="transactionManager" entity-manager-factory-ref="entityManagerFactory" />
+
+	<!-- Jpa 事务配置 -->
+	<bean id="transactionManager" class="org.springframework.orm.jpa.JpaTransactionManager">
+		<property name="entityManagerFactory" ref="entityManagerFactory" />
+	</bean>
+
+	<!-- 使用annotation定义事务 -->
+	<tx:annotation-driven transaction-manager="transactionManager" proxy-target-class="true" />
+	
+	<!-- <import resource="shiro.xml"/> -->
+	
+</beans>
